@@ -472,8 +472,8 @@ const Pages = {
             <span>${formatPrice(OrderList.getSubtotal())}</span>
           </div>
           <div style="margin-top: var(--space-xl); display: flex; gap: var(--space-md); flex-wrap: wrap;">
-            <button class="btn btn--primary btn--large" style="flex: 1;" onclick="Pages.submitOrder(event);">
-              📩 Submit Order List
+            <button class="btn btn--primary btn--large" style="flex: 1;" onclick="Pages.sendWhatsAppOrder(event);">
+              ✅ Confirm & Send via WhatsApp
             </button>
             <button class="btn btn--ghost btn--small" onclick="if(confirm('Clear the entire order list?')){OrderList.clear(); Pages.renderOrderList();}">
               🗑️ Clear Order List
@@ -513,16 +513,45 @@ const Pages = {
     }
   },
 
-  submitOrder(event) {
+  getWhatsAppOrderText(items) {
+    const header = '*New Order from Digital Menu!* 🍰';
+    const separator = '-----------------------------';
+    const lines = [header, separator, `*Shop:* ${SHOP_INFO.name}`, separator];
+
+    items.forEach(item => {
+      const optionParts = [];
+      if (item.options.weight) optionParts.push(`${item.options.weight}kg`);
+      if (item.options.tier && item.options.tier > 1) optionParts.push(`${item.options.tier}-Tier`);
+      if (item.options.baseFlavor) optionParts.push(item.options.baseFlavor);
+      if (item.options.toppingFlavor) optionParts.push(item.options.toppingFlavor);
+      if (item.options.addOns && item.options.addOns.length > 0) optionParts.push(`+${item.options.addOns.length} add-ons`);
+
+      const optionText = optionParts.length ? ` (${optionParts.join(', ')})` : '';
+      lines.push(`• ${item.quantity}x ${item.name}${optionText}`);
+      if (item.options.message) {
+        lines.push(`  _Note:_ ${item.options.message}`);
+      }
+    });
+
+    lines.push(separator);
+    lines.push(`*Total Amount:* ${formatPrice(OrderList.getSubtotal())}`);
+    lines.push('Please prepare my order for pickup.');
+
+    return lines.join('\n');
+  },
+
+  sendWhatsAppOrder(event) {
     if (OrderList.items.length === 0) {
-      this.showToast('📝 Your order list is empty. Add items first!');
+      this.showToast('📝 Your order list is empty. Add items before sending.');
       return;
     }
 
+    const phone = SHOP_INFO.whatsappPhone || SHOP_INFO.phone.replace(/\D/g, '');
+    const text = this.getWhatsAppOrderText(OrderList.items);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+
+    window.open(url, '_blank');
     Animations.createSparkle(event.clientX, event.clientY, 20);
-    const orderId = generateOrderId();
-    OrderList.clear();
-    location.hash = `#/order-complete/${orderId}`;
   },
 
   /* ========================

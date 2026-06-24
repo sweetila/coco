@@ -7,6 +7,7 @@ const SHOP_INFO = {
   tagline: "Where Every Bite Sparkles ✨",
   address: "In front of Lotus Hospital, Varruchi Marg, Freeganj, Ujjain, MP-456010",
   phone: "+91 86024 86606",
+  whatsappPhone: "918602486606",
   email: "hello@shimmersbakery.in",
   hours: "11:00 AM — 10:30 PM (Mon–Sat)",
   instagram: "@shimmers_bakery_",
