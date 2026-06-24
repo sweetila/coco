@@ -76,8 +76,8 @@ const Pages = {
             Want a cake that's uniquely yours? Choose your flavours, toppings, tiers, and decorations.
             We'll create something magical just for you! ✨
           </p>
-          <button class="btn btn--primary btn--large" onclick="location.hash='#/cakes'; Animations.createSparkle(event.clientX, event.clientY);">
-            🎂 Design Your Cake
+          <button class="btn btn--primary btn--large" onclick="location.hash='#/make-my-cake'; Animations.createSparkle(event.clientX, event.clientY);">
+            🎂 Make My Cake
           </button>
         </div>
       </section>
@@ -153,6 +153,13 @@ const Pages = {
             </div>
           `).join('')}
         </div>
+        ${categoryId === 'cakes' ? `
+          <div class="section-note" style="margin-top: var(--space-xl); padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
+            <p style="margin: 0; font-size: 0.98rem; color: var(--text-secondary);">
+              🎨 Want a truly custom cake? Visit the <button class="link-btn" onclick="location.hash='#/make-my-cake'">Make My Cake</button> page. All other menu items are pre-made and fixed.
+            </p>
+          </div>
+        ` : ''}
       </div>
       ${this.renderFooter()}
     `;
@@ -222,8 +229,6 @@ const Pages = {
             </div>
           </div>
 
-          ${product.customizable ? this.renderCustomization(product) : ''}
-
           <!-- Add to Cart -->
           <div style="padding: var(--space-xl) var(--space-2xl) var(--space-2xl); display: flex; gap: var(--space-md); align-items: center; flex-wrap: wrap;">
             <div class="qty-control">
@@ -255,10 +260,11 @@ const Pages = {
       categoryId,
       quantity: 1,
       options: {
-        weight: product.customizable ? 1 : null,
-        baseFlavor: product.customizable ? CUSTOMIZATION_OPTIONS.baseFlavors[0] : null,
-        toppingFlavor: product.customizable ? CUSTOMIZATION_OPTIONS.toppingFlavors[0] : null,
-        tier: product.customizable ? 1 : null,
+        weight: null,
+        baseFlavor: null,
+        toppingFlavor: null,
+        tier: null,
+        topper: null,
         addOns: [],
         message: '',
       }
@@ -277,7 +283,7 @@ const Pages = {
             <label class="form-label">⚖️ Weight</label>
             <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
               ${CUSTOMIZATION_OPTIONS.weights.map(w => `
-                <option value="${w.value}" ${w.value === 1 ? 'selected' : ''}>${w.label}</option>
+                <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
               `).join('')}
             </select>
           </div>
@@ -359,17 +365,23 @@ const Pages = {
     if (toppingEl) this._currentItem.options.toppingFlavor = toppingEl.value;
 
     this.recalcItemPrice();
+    this.updateCakePreview();
+    this.updateMakeMyCakeSummary();
   },
 
   toggleAddon(addonName, element) {
     if (!this._currentItem) return;
+    const checkbox = element.querySelector('input[type="checkbox"]');
     const idx = this._currentItem.options.addOns.indexOf(addonName);
+
     if (idx >= 0) {
       this._currentItem.options.addOns.splice(idx, 1);
       element.classList.remove('selected');
+      if (checkbox) checkbox.checked = false;
     } else {
       this._currentItem.options.addOns.push(addonName);
       element.classList.add('selected');
+      if (checkbox) checkbox.checked = true;
       Animations.pop(element);
     }
     this.recalcItemPrice();
@@ -408,6 +420,308 @@ const Pages = {
     if (btn) Animations.addClickBounce(btn);
   },
 
+  renderMakeMyCakePage() {
+    const cakes = PRODUCTS.cakes;
+    const defaultCake = cakes[0];
+    const app = document.getElementById('app');
+
+    this._currentItem = {
+      product: defaultCake,
+      categoryId: 'cakes',
+      quantity: 1,
+      options: {
+        weight: 0.45,
+        baseFlavor: CUSTOMIZATION_OPTIONS.baseFlavors[0],
+        toppingFlavor: CUSTOMIZATION_OPTIONS.toppingFlavors[0],
+        tier: 1,
+        topper: null,
+        addOns: [],
+        message: '',
+      }
+    };
+
+    app.innerHTML = `
+      <div class="make-cake-page page">
+        <button class="back-btn" onclick="location.hash='#/cakes'">← Back to Cakes</button>
+
+        <div class="category-page__header" style="background: ${getCategory('cakes').bgGradient};">
+          <span class="category-page__emoji">🎨</span>
+          <div>
+            <h1 class="category-page__title">Make My Cake</h1>
+            <p class="category-page__desc">Build your cake from the base, icing, tier, toppers, and toppings.</p>
+          </div>
+        </div>
+
+        <div class="customize-page__content" style="display: grid; gap: var(--space-xl); padding: var(--space-2xl) 0; grid-template-columns: minmax(300px, 1fr) 360px;">
+          <div class="make-cake-left" style="display:grid; gap: var(--space-xl);">
+            <div class="form-group">
+              <label class="form-label">Choose Your Cake</label>
+              <select class="form-select" id="custom-cake-selection" onchange="Pages.onCustomizeCakeChange()">
+                ${cakes.map(cake => `
+                  <option value="${cake.id}">${cake.name} — ${formatPrice(cake.price)}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="product-card product-card--preview" style="display: grid; gap: var(--space-md); padding: var(--space-lg); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
+              <div class="product-card__image" id="custom-preview-image" style="background: ${defaultCake.cardGradient};">
+                <span class="product-card__image-emoji">${defaultCake.sticker}</span>
+                <span class="product-card__sticker">${defaultCake.stickerLabel}</span>
+              </div>
+              <div>
+                <h2 id="custom-preview-name" style="margin: 0 0 var(--space-sm);">${defaultCake.name}</h2>
+                <p id="custom-preview-description" style="margin: 0 0 var(--space-sm); color: var(--text-secondary);">${defaultCake.description}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-sm);">
+                  <div style="font-weight: 700;">Base Price</div>
+                  <div id="custom-preview-base-price" style="font-weight: 700;">${formatPrice(defaultCake.price)}</div>
+                </div>
+              </div>
+            </div>
+            ${this.renderCakeBuilder(defaultCake)}
+          </div>
+
+          <div class="cake-builder-summary" style="display: grid; gap: var(--space-md); padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
+            <div class="cake-preview" id="cake-preview">
+              <div class="cake-preview__stage" id="cake-preview-stage"></div>
+              <div class="cake-preview__info">
+                <div class="cake-preview__label">Cake preview</div>
+                <div class="cake-preview__details" id="cake-preview-details">Choose a base and tier to begin.</div>
+              </div>
+            </div>
+            <div class="cake-summary-list">
+              <h3 style="margin:0; font-size:1rem; font-weight:700;">Your Selections</h3>
+              <ul id="cake-summary-items" style="list-style:none; padding:0; margin:0; display:grid; gap: 0.75rem;"></ul>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-weight:700;">
+              <span>Total</span>
+              <span id="make-cake-total">${formatPrice(defaultCake.price)}</span>
+            </div>
+            <div style="display: flex; gap: var(--space-md); align-items: center; flex-wrap: wrap;">
+              <div class="qty-control" style="margin-bottom: 0;">
+                <button class="qty-control__btn" onclick="Pages.updateItemQty(-1)">−</button>
+                <span class="qty-control__value" id="item-qty">1</span>
+                <button class="qty-control__btn" onclick="Pages.updateItemQty(1)">+</button>
+              </div>
+              <button class="btn btn--primary btn--large" id="add-to-order-btn" onclick="Pages.addCurrentItemToOrderList('cakes', '${defaultCake.id}', event)">
+                📝 Add Custom Cake — <span id="item-total-price">${formatPrice(defaultCake.price)}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); margin-top: var(--space-xl);">
+          <h3 style="font-family: var(--font-heading); font-weight: 700; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
+            💌 Add a Special Message
+          </h3>
+          <textarea class="form-textarea" id="special-message" placeholder="Write a message to go with your order..." rows="3"></textarea>
+        </div>
+      </div>
+      ${this.renderFooter()}
+    `;
+
+    this.updateCakePreview();
+    this.updateMakeMyCakeSummary();
+    this.recalcItemPrice();
+  },
+
+  renderCakeBuilder(product) {
+    return `
+      <div class="cake-builder">
+        <div class="form-group">
+          <label class="form-label">⚖️ Cake Size</label>
+          <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
+            ${CUSTOMIZATION_OPTIONS.weights.map(w => `
+              <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🎂 Tiers</label>
+          <select class="form-select" id="custom-tier" onchange="Pages.onCustomizationChange()">
+            ${CUSTOMIZATION_OPTIONS.tiers.map(t => `
+              <option value="${t.value}">${t.label}${t.priceExtra > 0 ? ' (+' + formatPrice(t.priceExtra) + ')' : ''}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🍰 Base Flavor</label>
+          <select class="form-select" id="custom-base" onchange="Pages.onCustomizationChange()">
+            ${CUSTOMIZATION_OPTIONS.baseFlavors.map(f => `
+              <option value="${f}">${f}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🍦 Icing Flavor</label>
+          <select class="form-select" id="custom-topping" onchange="Pages.onCustomizationChange()">
+            ${CUSTOMIZATION_OPTIONS.toppingFlavors.map(f => `
+              <option value="${f}">${f}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🎉 Cake Topper</label>
+          <select class="form-select" id="cake-topper-select" onchange="Pages.onCakeTopperChange()">
+            <option value="">None</option>
+            ${CUSTOMIZATION_OPTIONS.cakeToppers.map(topper => `
+              <option value="${topper.name}">${topper.name} (+${formatPrice(topper.price)})</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="customization__addons">
+          <label class="form-label">🌟 Extra Toppings</label>
+          <div class="customization__addons-grid">
+            ${CUSTOMIZATION_OPTIONS.addOns.map(addon => `
+              <label class="addon-chip" id="addon-${addon.name.replace(/\s+/g, '-') }" onclick="Pages.toggleAddon('${addon.name}', this)">
+                <input type="checkbox" style="display:none;" value="${addon.name}">
+                <span class="addon-chip__emoji">${addon.emoji}</span>
+                <span>${addon.name}</span>
+                <span class="addon-chip__price">+${formatPrice(addon.price)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  onCakeTopperChange() {
+    if (!this._currentItem) return;
+    const topperSelect = document.getElementById('cake-topper-select');
+    if (!topperSelect) return;
+
+    this._currentItem.options.topper = topperSelect.value || null;
+    this.updateCakePreview();
+    this.recalcItemPrice();
+    this.updateMakeMyCakeSummary();
+  },
+
+  onCustomizeCakeChange() {
+    const select = document.getElementById('custom-cake-selection');
+    if (!select || !this._currentItem) return;
+
+    const cake = getProduct('cakes', select.value);
+    if (!cake) return;
+
+    this._currentItem.product = cake;
+    this._currentItem.categoryId = 'cakes';
+    this._currentItem.quantity = 1;
+
+    const qtyEl = document.getElementById('item-qty');
+    if (qtyEl) qtyEl.textContent = '1';
+
+    const btn = document.getElementById('add-to-order-btn');
+    if (btn) btn.setAttribute('onclick', `Pages.addCurrentItemToOrderList('cakes', '${cake.id}', event)`);
+
+    this._currentItem.options.addOns = [];
+    document.querySelectorAll('.addon-chip.selected').forEach(chip => {
+      chip.classList.remove('selected');
+      const checkbox = chip.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.checked = false;
+    });
+
+    const topperSelect = document.getElementById('cake-topper-select');
+    if (topperSelect) topperSelect.value = '';
+    this._currentItem.options.topper = null;
+
+    this.updateCakePreview();
+    this.recalcItemPrice();
+    this.updateMakeMyCakeSummary();
+  },
+
+  updateCakePreview() {
+    const cake = this._currentItem.product;
+    const stage = document.getElementById('cake-preview-stage');
+    const details = document.getElementById('cake-preview-details');
+    if (!stage || !details) return;
+
+    const baseEmoji = this.getBaseEmoji(this._currentItem.options.baseFlavor || cake.name);
+    const tierCount = this._currentItem.options.tier || 1;
+    const topperEmoji = this.getTopperEmoji(this._currentItem.options.topper);
+    const icingEmoji = this.getIcingEmoji(this._currentItem.options.toppingFlavor);
+
+    stage.innerHTML = '';
+    for (let i = 0; i < tierCount; i++) {
+      const layer = document.createElement('div');
+      layer.className = 'cake-layer visible';
+      layer.textContent = baseEmoji;
+      layer.style.animationDelay = `${i * 120}ms`;
+      stage.appendChild(layer);
+    }
+
+    if (topperEmoji) {
+      const topper = document.createElement('div');
+      topper.className = 'cake-topper visible';
+      topper.textContent = topperEmoji;
+      stage.appendChild(topper);
+    }
+
+    details.textContent = `Base: ${this._currentItem.options.baseFlavor || cake.name}, Icing: ${this._currentItem.options.toppingFlavor || 'None'}, Tiers: ${tierCount}${this._currentItem.options.topper ? `, Topper: ${this._currentItem.options.topper}` : ''}`;
+    Animations.pop(stage);
+  },
+
+  getBaseEmoji(flavor) {
+    const map = {
+      'Chocolate Sponge': '🍫',
+      'Vanilla Sponge': '🍰',
+      'Red Velvet': '🌹',
+      'Butterscotch': '🍯',
+      'Pineapple': '🍍',
+      'Strawberry': '🍓',
+      'Coffee': '☕',
+    };
+    return map[flavor] || '🍰';
+  },
+
+  getTopperEmoji(topper) {
+    const topper = (CUSTOMIZATION_OPTIONS.cakeToppers || []).find(t => t.name === topper);
+    return topper ? topper.emoji : '🎂';
+  },
+
+  getIcingEmoji(icing) {
+    const map = {
+      'Buttercream': '🧈',
+      'Whipped Cream': '🍦',
+      'Chocolate Ganache': '🍫',
+      'Cream Cheese': '🧀',
+      'Fondant': '🧁',
+      'Fresh Fruit': '🍓',
+      'Caramel Drizzle': '🍯',
+      'Strawberry Glaze': '🍓',
+    };
+    return map[icing] || '✨';
+  },
+
+  updateMakeMyCakeSummary() {
+    const summary = document.getElementById('cake-summary-items');
+    const totalEl = document.getElementById('make-cake-total');
+    if (!summary || !totalEl) return;
+
+    const lines = [];
+    const opt = this._currentItem.options;
+    const cake = this._currentItem.product;
+
+    lines.push(`<li>Base: ${opt.baseFlavor || cake.name}</li>`);
+    lines.push(`<li>Icing: ${opt.toppingFlavor || 'None'}</li>`);
+    lines.push(`<li>Tier: ${opt.tier || 1}</li>`);
+    if (opt.topper) {
+      const topper = CUSTOMIZATION_OPTIONS.cakeToppers.find(t => t.name === opt.topper);
+      const topperLabel = topper ? `${opt.topper} (+${formatPrice(topper.price)})` : opt.topper;
+      lines.push(`<li>Topper: ${topperLabel}</li>`);
+    }
+    if (opt.addOns.length > 0) {
+      opt.addOns.forEach(addonName => {
+        const addon = CUSTOMIZATION_OPTIONS.addOns.find(a => a.name === addonName);
+        lines.push(`<li>${addonName}${addon ? ` (+${formatPrice(addon.price)})` : ''}</li>`);
+      });
+    }
+    if (opt.message) {
+      lines.push(`<li>Note: ${opt.message}</li>`);
+    }
+
+    summary.innerHTML = lines.join('');
+    totalEl.textContent = formatPrice(this._currentItem.quantity * OrderList.calculateItemPrice(cake, opt));
+  },
+
   /* ========================
      ORDER LIST PAGE
      ======================== */
@@ -440,15 +754,28 @@ const Pages = {
                 ${item.sticker || '🍰'}
               </div>
               <div class="cart-item__info">
-                <div class="cart-item__name">${item.name}</div>
+                <div class="cart-item__name">
+                  ${item.name}
+                  ${item.options.addOns && item.options.addOns.length > 0 ? `
+                    <span class="cart-item__addon-tag">(${item.options.addOns.map(addonName => {
+                      const addon = CUSTOMIZATION_OPTIONS.addOns.find(a => a.name === addonName);
+                      return addon ? `${addon.name} +${formatPrice(addon.price)}` : addonName;
+                    }).join(', ')})
+                  ` : ''}
+                </div>
                 <div class="cart-item__options">
                   ${item.options.weight ? `${item.options.weight}kg` : ''}
                   ${item.options.baseFlavor ? ` · ${item.options.baseFlavor}` : ''}
                   ${item.options.toppingFlavor ? ` · ${item.options.toppingFlavor}` : ''}
                   ${item.options.tier && item.options.tier > 1 ? ` · ${item.options.tier}-Tier` : ''}
-                  ${item.options.addOns && item.options.addOns.length > 0 ? ` · +${item.options.addOns.length} add-ons` : ''}
                   ${item.options.message ? ` · Message: ${item.options.message}` : ''}
                 </div>
+                ${item.options.addOns && item.options.addOns.length > 0 ? `
+                  <div class="cart-item__addons">Add-ons: ${item.options.addOns.map(addonName => {
+                    const addon = CUSTOMIZATION_OPTIONS.addOns.find(a => a.name === addonName);
+                    return addon ? `${addon.name} (+${formatPrice(addon.price)})` : addonName;
+                  }).join(', ')}</div>
+                ` : ''}
               </div>
               <div class="qty-control">
                 <button class="qty-control__btn" onclick="Pages.orderListUpdateQty('${item.id}', -1)">−</button>
@@ -524,7 +851,13 @@ const Pages = {
       if (item.options.tier && item.options.tier > 1) optionParts.push(`${item.options.tier}-Tier`);
       if (item.options.baseFlavor) optionParts.push(item.options.baseFlavor);
       if (item.options.toppingFlavor) optionParts.push(item.options.toppingFlavor);
-      if (item.options.addOns && item.options.addOns.length > 0) optionParts.push(`+${item.options.addOns.length} add-ons`);
+      const addonDetails = item.options.addOns && item.options.addOns.length > 0
+        ? item.options.addOns.map(addonName => {
+            const addon = CUSTOMIZATION_OPTIONS.addOns.find(a => a.name === addonName);
+            return addon ? `${addon.name} (+${formatPrice(addon.price)})` : addonName;
+          })
+        : [];
+      if (addonDetails.length > 0) optionParts.push(`Add-ons: ${addonDetails.join(', ')}`);
 
       const optionText = optionParts.length ? ` (${optionParts.join(', ')})` : '';
       lines.push(`• ${item.quantity}x ${item.name}${optionText}`);

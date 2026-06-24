@@ -645,6 +645,20 @@
   white-space: nowrap;
 }
 
+.cart-item__addons {
+  margin-top: var(--space-xs);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cart-item__addon-tag {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--pink-500);
+  font-weight: 600;
+}
+
 .cart-item__remove {
   background: none;
   border: none;

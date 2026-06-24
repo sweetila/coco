@@ -42,10 +42,17 @@ const CUSTOMIZATION_OPTIONS = {
     { name: "Fresh Fruit Topping", price: 150, emoji: "🍓" },
     { name: "Edible Glitter", price: 120, emoji: "✨" },
     { name: "Fondant Decorations", price: 200, emoji: "🎀" },
-    { name: "Cake Topper", price: 180, emoji: "🎂" },
     { name: "Extra Layer", price: 250, emoji: "📚" },
     { name: "Photo Print (Edible)", price: 300, emoji: "📸" },
     { name: "Candles Set", price: 60, emoji: "🕯️" },
+  ],
+  cakeToppers: [
+    { name: "Happy Birthday", price: 120, emoji: "🎉" },
+    { name: "Happy Anniversary", price: 140, emoji: "💖" },
+    { name: "Congratulations", price: 130, emoji: "🥳" },
+    { name: "Just Married", price: 150, emoji: "💍" },
+    { name: "Get Well Soon", price: 110, emoji: "🌸" },
+    { name: "Thank You", price: 100, emoji: "🙏" },
   ],
   tiers: [
     { label: "Single Tier", value: 1, priceExtra: 0 },

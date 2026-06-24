@@ -70,6 +70,12 @@ const OrderList = {
         if (addon) price += addon.price;
       });
     }
+
+    // Cake topper
+    if (options.topper) {
+      const topperOption = CUSTOMIZATION_OPTIONS.cakeToppers && CUSTOMIZATION_OPTIONS.cakeToppers.find(t => t.name === options.topper);
+      if (topperOption) price += topperOption.price;
+    }
     
     return price;
   },

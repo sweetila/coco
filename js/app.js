@@ -70,6 +70,10 @@ const App = {
       render(() => Pages.renderOrderList());
       this.setActiveNav('order-list');
     }
+    else if (hash === '#/make-my-cake') {
+      render(() => Pages.renderMakeMyCakePage());
+      this.setActiveNav('make-my-cake');
+    }
     else if (hash.startsWith('#/order-complete')) {
       const orderId = hash.replace('#/order-complete/', '').replace('#/order-complete', '');
       render(() => Pages.renderOrderConfirmation(orderId));
