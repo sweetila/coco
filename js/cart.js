@@ -1,21 +1,17 @@
 /* ============================================
-   SHIMMERS BAKERY — Cart Logic
+   SHIMMERS BAKERY — Order List Logic
    ============================================ */
 
-const Cart = {
+const OrderList = {
   items: [],
-  discountCode: null,
-  discountPercent: 0,
 
   init() {
-    const saved = localStorage.getItem('shimmers_cart');
+    const saved = localStorage.getItem('shimmers_order_list');
     if (saved) {
       try {
         const data = JSON.parse(saved);
         this.items = data.items || [];
-        this.discountCode = data.discountCode || null;
-        this.discountPercent = data.discountPercent || 0;
-      } catch(e) {
+      } catch (e) {
         this.items = [];
       }
     }
@@ -23,13 +19,11 @@ const Cart = {
   },
 
   save() {
-    localStorage.setItem('shimmers_cart', JSON.stringify({
+    localStorage.setItem('shimmers_order_list', JSON.stringify({
       items: this.items,
-      discountCode: this.discountCode,
-      discountPercent: this.discountPercent,
     }));
     this.updateBadge();
-    EventBus.emit('cart:updated', this.items);
+    EventBus.emit('order-list:updated', this.items);
   },
 
   addItem(product, categoryId, options = {}) {
@@ -97,37 +91,8 @@ const Cart = {
     }
   },
 
-  applyDiscount(code) {
-    const upperCode = code.toUpperCase().trim();
-    const discount = DISCOUNT_CODES[upperCode];
-    if (discount) {
-      this.discountCode = upperCode;
-      this.discountPercent = discount.percent;
-      this.save();
-      return { success: true, label: discount.label, percent: discount.percent };
-    }
-    return { success: false };
-  },
-
-  removeDiscount() {
-    this.discountCode = null;
-    this.discountPercent = 0;
-    this.save();
-  },
-
   getSubtotal() {
     return this.items.reduce((sum, item) => sum + (item.totalPrice * item.quantity), 0);
-  },
-
-  getDiscountAmount() {
-    if (this.discountPercent > 0) {
-      return Math.round(this.getSubtotal() * this.discountPercent / 100);
-    }
-    return 0;
-  },
-
-  getTotal() {
-    return this.getSubtotal() - this.getDiscountAmount();
   },
 
   getItemCount() {
@@ -136,8 +101,6 @@ const Cart = {
 
   clear() {
     this.items = [];
-    this.discountCode = null;
-    this.discountPercent = 0;
     this.save();
   },
 

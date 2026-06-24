@@ -31,8 +31,8 @@
       <a class="navbar__link" href="#/cakes" data-route="cakes">🎂 Cakes</a>
       <a class="navbar__link" href="#/cookies" data-route="cookies">🍪 Cookies</a>
       <a class="navbar__link" href="#/specials" data-route="specials">⭐ Specials</a>
-      <button class="navbar__cart" onclick="location.hash='#/cart'" data-route="cart" aria-label="Cart">
-        🛒
+      <button class="navbar__cart" onclick="location.hash='#/order-list'" data-route="order-list" aria-label="Order List">
+        📝
         <span class="navbar__cart-badge" id="cart-badge" data-count="0">0</span>
       </button>
     </div>
@@ -46,7 +46,7 @@
     </div>
   </main>
 
-  <!-- Scripts (order matters: data → utils → animations → cart → pages → app) -->
+  <!-- Scripts (order matters: data → utils → animations → order list → pages → app) -->
   <script src="js/data.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/animations.js"></script>

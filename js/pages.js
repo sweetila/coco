@@ -231,9 +231,9 @@ const Pages = {
               <span class="qty-control__value" id="item-qty">1</span>
               <button class="qty-control__btn" onclick="Pages.updateItemQty(1)">+</button>
             </div>
-            <button class="btn btn--primary btn--large" id="add-to-cart-btn"
-                    onclick="Pages.addCurrentItemToCart('${categoryId}', '${productId}', event)">
-              🛒 Add to Cart — <span id="item-total-price">${formatPrice(product.price)}</span>
+              <button class="btn btn--primary btn--large" id="add-to-order-btn"
+                    onclick="Pages.addCurrentItemToOrderList('${categoryId}', '${productId}', event)">
+              📝 Add to Order List — <span id="item-total-price">${formatPrice(product.price)}</span>
             </button>
           </div>
         </div>
@@ -377,7 +377,7 @@ const Pages = {
 
   recalcItemPrice() {
     if (!this._currentItem) return;
-    const unitPrice = Cart.calculateItemPrice(this._currentItem.product, this._currentItem.options);
+    const unitPrice = OrderList.calculateItemPrice(this._currentItem.product, this._currentItem.options);
     const total = unitPrice * this._currentItem.quantity;
     
     const priceEl = document.getElementById('item-price');
@@ -386,50 +386,41 @@ const Pages = {
     if (totalEl) totalEl.textContent = formatPrice(total);
   },
 
-  addCurrentItemToCart(categoryId, productId, event) {
+  addCurrentItemToOrderList(categoryId, productId, event) {
     if (!this._currentItem) return;
     
     const messageEl = document.getElementById('special-message');
     if (messageEl) this._currentItem.options.message = messageEl.value;
 
     const product = getProduct(categoryId, productId);
-    const item = Cart.addItem(product, categoryId, { ...this._currentItem.options });
-    
-    // Add multiple if quantity > 1
-    for (let i = 1; i < this._currentItem.quantity; i++) {
-      Cart.updateQuantity(item.id, this._currentItem.quantity);
-    }
-    // Fix: set quantity directly
-    const addedItem = Cart.items.find(i => i.id === item.id);
-    if (addedItem) {
-      addedItem.quantity = this._currentItem.quantity;
-      Cart.save();
-    }
+    const item = OrderList.addItem(product, categoryId, { ...this._currentItem.options });
+    item.quantity = this._currentItem.quantity;
+    OrderList.save();
 
     // Sparkle animation
     Animations.createSparkle(event.clientX, event.clientY, 15);
 
     // Show toast
-    this.showToast(`${product.sticker} ${product.name} added to cart!`);
+    this.showToast(`${product.sticker} ${product.name} added to order list!`);
 
     // Bounce the button
-    const btn = document.getElementById('add-to-cart-btn');
+    const btn = document.getElementById('add-to-order-btn');
     if (btn) Animations.addClickBounce(btn);
   },
 
   /* ========================
-     CART / BILLING PAGE
+     ORDER LIST PAGE
      ======================== */
-  renderCart() {
+  renderOrderList() {
     const app = document.getElementById('app');
-    const items = Cart.items;
+    const items = OrderList.items;
 
     if (items.length === 0) {
       app.innerHTML = `
         <div class="empty-state" style="min-height: calc(100vh - 70px); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-          <div class="empty-state__emoji">🛒</div>
-          <h2 class="empty-state__title">Your cart is empty!</h2>
-          <p class="empty-state__desc">Looks like you haven't added any treats yet. Let's fix that!</p>
+          <div class="empty-state__emoji">📝</div>
+          <h2 class="empty-state__title">Your order list is empty!</h2>
+          <p class="empty-state__desc">Select treats and custom orders to build your preparation list for the shop manager.</p>
           <button class="btn btn--primary btn--large" onclick="location.hash='#/'">🍰 Browse Menu</button>
         </div>
       `;
@@ -440,7 +431,7 @@ const Pages = {
       <div class="cart-page page">
         <button class="back-btn" onclick="location.hash='#/'">← Back to Menu</button>
 
-        <h1 class="cart-page__title">🛒 Your Cart</h1>
+        <h1 class="cart-page__title">📝 Your Order List</h1>
 
         <div id="cart-items">
           ${items.map((item, i) => `
@@ -456,68 +447,36 @@ const Pages = {
                   ${item.options.toppingFlavor ? ` · ${item.options.toppingFlavor}` : ''}
                   ${item.options.tier && item.options.tier > 1 ? ` · ${item.options.tier}-Tier` : ''}
                   ${item.options.addOns && item.options.addOns.length > 0 ? ` · +${item.options.addOns.length} add-ons` : ''}
+                  ${item.options.message ? ` · Message: ${item.options.message}` : ''}
                 </div>
               </div>
               <div class="qty-control">
-                <button class="qty-control__btn" onclick="Pages.cartUpdateQty('${item.id}', -1)">−</button>
+                <button class="qty-control__btn" onclick="Pages.orderListUpdateQty('${item.id}', -1)">−</button>
                 <span class="qty-control__value" id="qty-${item.id}">${item.quantity}</span>
-                <button class="qty-control__btn" onclick="Pages.cartUpdateQty('${item.id}', 1)">+</button>
+                <button class="qty-control__btn" onclick="Pages.orderListUpdateQty('${item.id}', 1)">+</button>
               </div>
               <div class="cart-item__price">${formatPrice(item.totalPrice * item.quantity)}</div>
-              <button class="cart-item__remove" onclick="Pages.cartRemoveItem('${item.id}')" title="Remove">✕</button>
+              <button class="cart-item__remove" onclick="Pages.orderListRemoveItem('${item.id}')" title="Remove">✕</button>
             </div>
           `).join('')}
         </div>
 
-        <!-- Summary -->
         <div class="cart-summary">
-          <h3 class="cart-summary__title">🧾 Order Summary</h3>
-
-          <!-- Discount Section -->
-          <div class="cart-summary__discount-section">
-            <div class="cart-summary__discount-title">🎁 Have a discount code?</div>
-            <div id="discount-area">
-              ${Cart.discountCode ? `
-                <div class="discount-success">
-                  🎉 <strong>${Cart.discountCode}</strong> applied — ${Cart.discountPercent}% off!
-                  <button class="btn btn--ghost btn--small" style="margin-left: auto;" onclick="Cart.removeDiscount(); Pages.renderCart();">Remove</button>
-                </div>
-              ` : `
-                <div class="discount-input">
-                  <input type="text" class="discount-input__field" id="discount-code" placeholder="Enter code..." maxlength="20">
-                  <button class="discount-input__btn" onclick="Pages.applyDiscountCode()">Apply ✨</button>
-                </div>
-                <div id="discount-error"></div>
-                <div class="cart-summary__discount-hints">
-                  <span class="discount-hint" onclick="document.getElementById('discount-code').value='SHIMMER10'">Try: SHIMMER10</span>
-                  <span class="discount-hint" onclick="document.getElementById('discount-code').value='SWEETDEAL'">Try: SWEETDEAL</span>
-                  <span class="discount-hint" onclick="document.getElementById('discount-code').value='SPARKLE20'">Try: SPARKLE20</span>
-                </div>
-              `}
-            </div>
-          </div>
-
+          <h3 class="cart-summary__title">📋 Order List Summary</h3>
           <div class="cart-summary__row">
-            <span>Subtotal</span>
-            <span>${formatPrice(Cart.getSubtotal())}</span>
+            <span>Items</span>
+            <span>${OrderList.getItemCount()}</span>
           </div>
-          ${Cart.discountPercent > 0 ? `
-            <div class="cart-summary__row cart-summary__row--discount">
-              <span>Discount (${Cart.discountPercent}%)</span>
-              <span>-${formatPrice(Cart.getDiscountAmount())}</span>
-            </div>
-          ` : ''}
           <div class="cart-summary__row cart-summary__row--total">
-            <span>Total</span>
-            <span>${formatPrice(Cart.getTotal())}</span>
+            <span>Total Expense</span>
+            <span>${formatPrice(OrderList.getSubtotal())}</span>
           </div>
-
           <div style="margin-top: var(--space-xl); display: flex; gap: var(--space-md); flex-wrap: wrap;">
-            <button class="btn btn--primary btn--large" style="flex: 1;" onclick="location.hash='#/checkout'; Animations.createSparkle(event.clientX, event.clientY);">
-              💳 Proceed to Checkout
+            <button class="btn btn--primary btn--large" style="flex: 1;" onclick="Pages.submitOrder(event);">
+              📩 Submit Order List
             </button>
-            <button class="btn btn--ghost btn--small" onclick="if(confirm('Clear entire cart?')){Cart.clear(); Pages.renderCart();}">
-              🗑️ Clear Cart
+            <button class="btn btn--ghost btn--small" onclick="if(confirm('Clear the entire order list?')){OrderList.clear(); Pages.renderOrderList();}">
+              🗑️ Clear Order List
             </button>
           </div>
         </div>
@@ -526,224 +485,43 @@ const Pages = {
     `;
   },
 
-  cartUpdateQty(itemId, delta) {
-    const item = Cart.items.find(i => i.id === itemId);
+  orderListUpdateQty(itemId, delta) {
+    const item = OrderList.items.find(i => i.id === itemId);
     if (!item) return;
     const newQty = item.quantity + delta;
     if (newQty <= 0) {
-      this.cartRemoveItem(itemId);
+      this.orderListRemoveItem(itemId);
       return;
     }
-    Cart.updateQuantity(itemId, newQty);
-    // Re-render cart
-    this.renderCart();
+    OrderList.updateQuantity(itemId, newQty);
+    this.renderOrderList();
   },
 
-  cartRemoveItem(itemId) {
+  orderListRemoveItem(itemId) {
     const el = document.getElementById(`cart-item-${itemId}`);
     if (el) {
       el.style.transition = 'all 300ms ease';
       el.style.transform = 'translateX(100px)';
       el.style.opacity = '0';
       setTimeout(() => {
-        Cart.removeItem(itemId);
-        this.renderCart();
+        OrderList.removeItem(itemId);
+        this.renderOrderList();
       }, 300);
     } else {
-      Cart.removeItem(itemId);
-      this.renderCart();
+      OrderList.removeItem(itemId);
+      this.renderOrderList();
     }
   },
 
-  applyDiscountCode() {
-    const input = document.getElementById('discount-code');
-    const errorEl = document.getElementById('discount-error');
-    if (!input) return;
-
-    const result = Cart.applyDiscount(input.value);
-    if (result.success) {
-      Animations.discountCelebration(input);
-      this.renderCart();
-      this.showToast(`🎉 ${result.label} — Discount applied!`);
-    } else {
-      if (errorEl) {
-        errorEl.innerHTML = '<div class="discount-error">😅 Invalid code! Try one of the hints below.</div>';
-      }
-      Animations.wiggle(input);
-    }
-  },
-
-  /* ========================
-     CHECKOUT / PAYMENT PAGE
-     ======================== */
-  renderCheckout() {
-    const app = document.getElementById('app');
-    const items = Cart.items;
-
-    if (items.length === 0) {
-      location.hash = '#/cart';
+  submitOrder(event) {
+    if (OrderList.items.length === 0) {
+      this.showToast('📝 Your order list is empty. Add items first!');
       return;
     }
 
-    app.innerHTML = `
-      <div class="checkout-page page">
-        <button class="back-btn" onclick="location.hash='#/cart'">← Back to Cart</button>
-
-        <h1 class="checkout-page__title">💳 Checkout</h1>
-
-        <div class="checkout-grid">
-          <!-- Form -->
-          <div class="checkout-form">
-            <!-- Payment Method -->
-            <div class="checkout-form__section">
-              <h3 class="checkout-form__section-title">💰 Payment Method</h3>
-              <div class="payment-methods" id="payment-methods">
-                <label class="payment-method selected" onclick="Pages.selectPayment(this, 'cod')">
-                  <input type="radio" name="payment" value="cod" checked>
-                  <span class="payment-method__icon">🏠</span>
-                  <span class="payment-method__name">Cash on Delivery</span>
-                </label>
-                <label class="payment-method" onclick="Pages.selectPayment(this, 'upi')">
-                  <input type="radio" name="payment" value="upi">
-                  <span class="payment-method__icon">📱</span>
-                  <span class="payment-method__name">UPI</span>
-                </label>
-                <label class="payment-method" onclick="Pages.selectPayment(this, 'card')">
-                  <input type="radio" name="payment" value="card">
-                  <span class="payment-method__icon">💳</span>
-                  <span class="payment-method__name">Card</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Customer Details -->
-            <div class="checkout-form__section">
-              <h3 class="checkout-form__section-title">👤 Your Details</h3>
-              <div class="form-group">
-                <label class="form-label">Full Name</label>
-                <input type="text" class="form-input" id="checkout-name" placeholder="Enter your full name">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Phone Number</label>
-                <input type="tel" class="form-input" id="checkout-phone" placeholder="+91 XXXXX XXXXX">
-              </div>
-            </div>
-
-            <!-- Delivery / Pickup -->
-            <div class="checkout-form__section">
-              <h3 class="checkout-form__section-title">🚚 Delivery Options</h3>
-              <div class="toggle-switch" onclick="Pages.toggleDelivery()">
-                <span style="font-weight: 600; font-size: 0.95rem;">🏪 Pickup from Store</span>
-                <div class="toggle-switch__track" id="delivery-toggle">
-                  <div class="toggle-switch__thumb"></div>
-                </div>
-              </div>
-
-              <div id="delivery-address" style="margin-top: var(--space-lg);">
-                <div class="form-group">
-                  <label class="form-label">Delivery Address</label>
-                  <textarea class="form-textarea" id="checkout-address" placeholder="Enter your full delivery address..." rows="3"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <!-- Special Instructions -->
-            <div class="checkout-form__section">
-              <h3 class="checkout-form__section-title">📝 Special Instructions</h3>
-              <textarea class="form-textarea" id="checkout-instructions" placeholder="Any special requests? (e.g., 'Ring the bell twice', 'Leave at the door')..." rows="3"></textarea>
-            </div>
-
-            <!-- Place Order -->
-            <button class="btn btn--success btn--large" style="width: 100%; margin-top: var(--space-md);" id="place-order-btn" onclick="Pages.placeOrder(event)">
-              ✨ Place Order — ${formatPrice(Cart.getTotal())}
-            </button>
-          </div>
-
-          <!-- Order Summary Sidebar -->
-          <div class="order-summary">
-            <h3 class="order-summary__title">📋 Order Summary</h3>
-            <hr class="divider" style="margin: var(--space-md) 0;">
-            ${items.map(item => `
-              <div class="order-summary__item">
-                <span class="order-summary__item-name">${item.sticker || '🍰'} ${item.name}</span>
-                <span class="order-summary__item-qty">×${item.quantity}</span>
-                <span class="order-summary__item-price">${formatPrice(item.totalPrice * item.quantity)}</span>
-              </div>
-            `).join('')}
-            <hr class="divider" style="margin: var(--space-md) 0;">
-            <div class="order-summary__item">
-              <span class="order-summary__item-name" style="font-weight: 600;">Subtotal</span>
-              <span class="order-summary__item-price">${formatPrice(Cart.getSubtotal())}</span>
-            </div>
-            ${Cart.discountPercent > 0 ? `
-              <div class="order-summary__item" style="color: var(--green-500);">
-                <span class="order-summary__item-name">Discount (${Cart.discountPercent}%)</span>
-                <span class="order-summary__item-price">-${formatPrice(Cart.getDiscountAmount())}</span>
-              </div>
-            ` : ''}
-            <div class="order-summary__item" style="font-family: var(--font-heading); font-weight: 700; font-size: 1.1rem; color: var(--pink-500); padding-top: var(--space-md); border-top: 2px solid var(--pink-200); margin-top: var(--space-md);">
-              <span class="order-summary__item-name">Total</span>
-              <span class="order-summary__item-price">${formatPrice(Cart.getTotal())}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      ${this.renderFooter()}
-    `;
-
-    this._isPickup = false;
-  },
-
-  _isPickup: false,
-
-  selectPayment(element, method) {
-    $$('.payment-method').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    element.querySelector('input').checked = true;
-    Animations.pop(element);
-  },
-
-  toggleDelivery() {
-    this._isPickup = !this._isPickup;
-    const toggle = document.getElementById('delivery-toggle');
-    const addressSection = document.getElementById('delivery-address');
-    
-    if (toggle) {
-      toggle.classList.toggle('active', this._isPickup);
-    }
-    if (addressSection) {
-      addressSection.style.display = this._isPickup ? 'none' : 'block';
-    }
-  },
-
-  placeOrder(event) {
-    // Validate
-    const name = document.getElementById('checkout-name')?.value?.trim();
-    const phone = document.getElementById('checkout-phone')?.value?.trim();
-    const address = document.getElementById('checkout-address')?.value?.trim();
-
-    if (!name) {
-      this.showToast('😅 Please enter your name!');
-      Animations.wiggle(document.getElementById('checkout-name'));
-      return;
-    }
-    if (!phone) {
-      this.showToast('📱 Please enter your phone number!');
-      Animations.wiggle(document.getElementById('checkout-phone'));
-      return;
-    }
-    if (!this._isPickup && !address) {
-      this.showToast('📍 Please enter a delivery address!');
-      Animations.wiggle(document.getElementById('checkout-address'));
-      return;
-    }
-
-    // Sparkle at click point
     Animations.createSparkle(event.clientX, event.clientY, 20);
-    
-    // Navigate to confirmation
     const orderId = generateOrderId();
-    Cart.clear();
+    OrderList.clear();
     location.hash = `#/order-complete/${orderId}`;
   },
 
@@ -757,21 +535,19 @@ const Pages = {
       <div class="confirmation-page">
         <div class="confirmation__card">
           <div class="confirmation__emoji">🎉</div>
-          <h1 class="confirmation__title">Order Placed!</h1>
-          <p class="confirmation__subtitle">Thank you for ordering from Shimmers! ✨</p>
-          <p style="color: var(--text-muted); font-size: 0.9rem;">We're preparing your treats with extra love and sprinkles!</p>
+          <h1 class="confirmation__title">Order List Submitted!</h1>
+          <p class="confirmation__subtitle">Your digital order list is ready for the shop manager.</p>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Share this order ID with the staff so they can prepare your items quickly.</p>
           <div class="confirmation__order-id">Order ID: ${orderId || generateOrderId()}</div>
           <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: var(--space-xl);">
-            You'll receive a confirmation call shortly. For queries, reach us at <strong>${SHOP_INFO.phone}</strong>
-          </p>
+            Thank you for using Shimmers digital menu. If you want to update the list, start again from the menu.</p>
           <button class="btn btn--primary btn--large" onclick="location.hash='#/'">
-            🏠 Back to Home
+            🏠 Back to Menu
           </button>
         </div>
       </div>
     `;
 
-    // Celebration!
     setTimeout(() => Animations.orderCelebration(), 400);
   },
 

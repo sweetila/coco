@@ -4,8 +4,8 @@
 
 const App = {
   init() {
-    // Initialize cart
-    Cart.init();
+    // Initialize order list
+    OrderList.init();
 
     // Setup navigation
     this.setupNav();
@@ -66,13 +66,9 @@ const App = {
       render(() => Pages.renderItem(categoryId, productId));
       this.setActiveNav(categoryId);
     }
-    else if (hash === '#/cart') {
-      render(() => Pages.renderCart());
-      this.setActiveNav('cart');
-    }
-    else if (hash === '#/checkout') {
-      render(() => Pages.renderCheckout());
-      this.setActiveNav('cart');
+    else if (hash === '#/order-list') {
+      render(() => Pages.renderOrderList());
+      this.setActiveNav('order-list');
     }
     else if (hash.startsWith('#/order-complete')) {
       const orderId = hash.replace('#/order-complete/', '').replace('#/order-complete', '');
