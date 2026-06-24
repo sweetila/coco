@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shimmers Bakery — Where Every Bite Sparkles ✨</title>
+  <meta name="description" content="Shimmers Bakery — Freshly baked cakes, cookies, pastries, desserts and more! Handcrafted with love in the heart of the city. Order online or visit us today.">
+  <meta name="keywords" content="bakery, cakes, cookies, pastries, desserts, custom cakes, Shimmers, fresh baked">
+  <meta name="theme-color" content="#f472b6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar__logo" onclick="location.hash='#/'; Animations.createSparkle(event.clientX, event.clientY, 8);">
+      <span class="navbar__logo-sparkle">✨</span>
+      Shimmers
+      <span class="navbar__logo-sparkle">✨</span>
+    </div>
+
+    <button class="navbar__menu-btn" id="menu-toggle" aria-label="Toggle Menu">☰</button>
+
+    <div class="navbar__nav" id="nav-links">
+      <a class="navbar__link" href="#/" data-route="home">🏠 Home</a>
+      <a class="navbar__link" href="#/cakes" data-route="cakes">🎂 Cakes</a>
+      <a class="navbar__link" href="#/cookies" data-route="cookies">🍪 Cookies</a>
+      <a class="navbar__link" href="#/specials" data-route="specials">⭐ Specials</a>
+      <button class="navbar__cart" onclick="location.hash='#/cart'" data-route="cart" aria-label="Cart">
+        🛒
+        <span class="navbar__cart-badge" id="cart-badge" data-count="0">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main App Container -->
+  <main id="app">
+    <!-- Pages are rendered here by the router -->
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+      <div class="spinner"></div>
+    </div>
+  </main>
+
+  <!-- Scripts (order matters: data → utils → animations → cart → pages → app) -->
+  <script src="js/data.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/animations.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
