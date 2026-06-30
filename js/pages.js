@@ -76,8 +76,8 @@ const Pages = {
             Want a cake that's uniquely yours? Choose your flavours, toppings, tiers, and decorations.
             We'll create something magical just for you! ✨
           </p>
-          <button class="btn btn--primary btn--large" onclick="location.hash='#/make-my-cake'; Animations.createSparkle(event.clientX, event.clientY);">
-            🎂 Make My Cake
+          <button class="btn btn--primary btn--large" onclick="location.hash='#/design'; Animations.createSparkle(event.clientX, event.clientY);">
+            🎂 Design Your Cake
           </button>
         </div>
       </section>
@@ -94,6 +94,42 @@ const Pages = {
     // Add floating bubbles to hero
     const hero = document.getElementById('hero');
     if (hero) Animations.createBubbles(hero, 6);
+  },
+
+  renderDesignPage() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="design-page page">
+        <button class="back-btn" onclick="location.hash='#/'">← Back to Menu</button>
+
+        <div class="category-page__header" style="background: ${getCategory('cakes').bgGradient};">
+          <span class="category-page__emoji">🎨</span>
+          <div>
+            <h1 class="category-page__title">Design Your Cake</h1>
+            <p class="category-page__desc">Choose whether to modify an existing cake or build your own from scratch.</p>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-xl); padding: var(--space-2xl) 0;">
+          <div class="option-card" style="padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); display:flex; flex-direction:column; gap:var(--space-md); align-items:flex-start;">
+            <h2 style="margin:0;">Modify Existing Cake Options</h2>
+            <p style="color: var(--text-secondary);">Select a cake from our Cakes menu and tweak its size, tiers, icing or toppings.</p>
+            <div style="margin-top: auto; display:flex; gap:var(--space-md);">
+              <button class="btn btn--primary" onclick="location.hash='#/cakes'; Animations.createSparkle(event.clientX, event.clientY);">Go to Cakes</button>
+            </div>
+          </div>
+
+          <div class="option-card" style="padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); display:flex; flex-direction:column; gap:var(--space-md); align-items:flex-start;">
+            <h2 style="margin:0;">Make My Own</h2>
+            <p style="color: var(--text-secondary);">Build your custom cake: choose tiers, weight, base flavour, icing, toppings and any custom notes.</p>
+            <div style="margin-top: auto; display:flex; gap:var(--space-md);">
+              <button class="btn btn--secondary" onclick="location.hash='#/make-my-cake'; Animations.createSparkle(event.clientX, event.clientY);">Start Building</button>
+            </div>
+          </div>
+        </div>
+
+      ${this.renderFooter()}
+    `;
   },
 
   /* ========================
@@ -156,7 +192,7 @@ const Pages = {
         ${categoryId === 'cakes' ? `
           <div class="section-note" style="margin-top: var(--space-xl); padding: var(--space-xl); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
             <p style="margin: 0; font-size: 0.98rem; color: var(--text-secondary);">
-              🎨 Want a truly custom cake? Visit the <button class="link-btn" onclick="location.hash='#/make-my-cake'">Make My Cake</button> page. All other menu items are pre-made and fixed.
+              🎨 Want a truly custom cake? Visit the <button class="link-btn" onclick="location.hash='#/design'">Design Your Cake</button> page. All other menu items are pre-made and fixed.
             </p>
           </div>
         ` : ''}
@@ -278,22 +314,22 @@ const Pages = {
       <div class="customization">
         <h3 class="customization__title">🎨 Customise Your Order</h3>
         <div class="customization__grid">
-          <!-- Weight -->
-          <div class="form-group">
-            <label class="form-label">⚖️ Weight</label>
-            <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
-              ${CUSTOMIZATION_OPTIONS.weights.map(w => `
-                <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
-              `).join('')}
-            </select>
-          </div>
-
           <!-- Tiers -->
           <div class="form-group">
             <label class="form-label">🎂 Tiers</label>
             <select class="form-select" id="custom-tier" onchange="Pages.onCustomizationChange()">
               ${CUSTOMIZATION_OPTIONS.tiers.map(t => `
                 <option value="${t.value}">${t.label}${t.priceExtra > 0 ? ' (+' + formatPrice(t.priceExtra) + ')' : ''}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- Weight -->
+          <div class="form-group">
+            <label class="form-label">⚖️ Weight</label>
+            <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
+              ${CUSTOMIZATION_OPTIONS.weights.map(w => `
+                <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
               `).join('')}
             </select>
           </div>
@@ -323,8 +359,8 @@ const Pages = {
             <label class="form-label">🌟 Add-ons</label>
             <div class="customization__addons-grid">
               ${CUSTOMIZATION_OPTIONS.addOns.map(addon => `
-                <label class="addon-chip" id="addon-${addon.name.replace(/\s+/g, '-')}" onclick="Pages.toggleAddon('${addon.name}', this)">
-                  <input type="checkbox" style="display:none;" value="${addon.name}">
+                <label class="addon-chip" id="addon-${addon.name.replace(/\s+/g, '-')}">
+                  <input type="checkbox" onchange="Pages.toggleAddon('${addon.name}', this.parentElement)" value="${addon.name}">
                   <span class="addon-chip__emoji">${addon.emoji}</span>
                   <span>${addon.name}</span>
                   <span class="addon-chip__price">+${formatPrice(addon.price)}</span>
@@ -371,19 +407,31 @@ const Pages = {
 
   toggleAddon(addonName, element) {
     if (!this._currentItem) return;
-    const checkbox = element.querySelector('input[type="checkbox"]');
-    const idx = this._currentItem.options.addOns.indexOf(addonName);
+    const checkbox = element ? element.querySelector('input[type="checkbox"]') : null;
+    const has = this._currentItem.options.addOns.indexOf(addonName) >= 0;
 
-    if (idx >= 0) {
-      this._currentItem.options.addOns.splice(idx, 1);
-      element.classList.remove('selected');
-      if (checkbox) checkbox.checked = false;
+    if (checkbox) {
+      // Sync based on checkbox state
+      if (checkbox.checked && !has) {
+        this._currentItem.options.addOns.push(addonName);
+        element.classList.add('selected');
+        Animations.pop(element);
+      } else if (!checkbox.checked && has) {
+        this._currentItem.options.addOns = this._currentItem.options.addOns.filter(a => a !== addonName);
+        element.classList.remove('selected');
+      }
     } else {
-      this._currentItem.options.addOns.push(addonName);
-      element.classList.add('selected');
-      if (checkbox) checkbox.checked = true;
-      Animations.pop(element);
+      // Fallback: toggle
+      if (has) {
+        this._currentItem.options.addOns = this._currentItem.options.addOns.filter(a => a !== addonName);
+        if (element) element.classList.remove('selected');
+      } else {
+        this._currentItem.options.addOns.push(addonName);
+        if (element) element.classList.add('selected');
+        if (element) Animations.pop(element);
+      }
     }
+
     this.recalcItemPrice();
   },
 
@@ -527,18 +575,18 @@ const Pages = {
     return `
       <div class="cake-builder">
         <div class="form-group">
-          <label class="form-label">⚖️ Cake Size</label>
-          <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
-            ${CUSTOMIZATION_OPTIONS.weights.map(w => `
-              <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
-            `).join('')}
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label">🎂 Tiers</label>
           <select class="form-select" id="custom-tier" onchange="Pages.onCustomizationChange()">
             ${CUSTOMIZATION_OPTIONS.tiers.map(t => `
               <option value="${t.value}">${t.label}${t.priceExtra > 0 ? ' (+' + formatPrice(t.priceExtra) + ')' : ''}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">⚖️ Cake Size</label>
+          <select class="form-select" id="custom-weight" onchange="Pages.onCustomizationChange()">
+            ${CUSTOMIZATION_OPTIONS.weights.map(w => `
+              <option value="${w.value}" ${w.value === 0.45 ? 'selected' : ''}>${w.label}</option>
             `).join('')}
           </select>
         </div>
@@ -571,8 +619,8 @@ const Pages = {
           <label class="form-label">🌟 Extra Toppings</label>
           <div class="customization__addons-grid">
             ${CUSTOMIZATION_OPTIONS.addOns.map(addon => `
-              <label class="addon-chip" id="addon-${addon.name.replace(/\s+/g, '-') }" onclick="Pages.toggleAddon('${addon.name}', this)">
-                <input type="checkbox" style="display:none;" value="${addon.name}">
+              <label class="addon-chip" id="addon-${addon.name.replace(/\s+/g, '-') }">
+                <input type="checkbox" onchange="Pages.toggleAddon('${addon.name}', this.parentElement)" value="${addon.name}">
                 <span class="addon-chip__emoji">${addon.emoji}</span>
                 <span>${addon.name}</span>
                 <span class="addon-chip__price">+${formatPrice(addon.price)}</span>
@@ -673,8 +721,8 @@ const Pages = {
   },
 
   getTopperEmoji(topper) {
-    const topper = (CUSTOMIZATION_OPTIONS.cakeToppers || []).find(t => t.name === topper);
-    return topper ? topper.emoji : '🎂';
+    const topperPage2 = (CUSTOMIZATION_OPTIONS.cakeToppers || []).find(t => t.name === topper);
+    return topperPage2 ? topperPage2.emoji : '🎂';
   },
 
   getIcingEmoji(icing) {
